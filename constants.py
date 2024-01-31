@@ -1,8 +1,8 @@
 import torch
 import pygame
 
-# variable for use in second version of this project
-k_maxCreatures = 1
+k_maxCreatures = 5
+k_particlesPerCreature = 64
 
 # define colors
 red = (255, 0, 0)
