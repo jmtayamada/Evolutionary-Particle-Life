@@ -10,38 +10,21 @@ from constants import *
 # class for a particle sim
 class ParticleLife():
     
-    def __init__(self, size: int, colorRatios: [], velocityMultiplyer: float) -> None: 
+    def __init__(self, size: int, velocityMultiplyer: float) -> None: 
         # velocity multiplyer
         self.velocityMultiplyer = velocityMultiplyer
-        # creating color ratios for particles
-        tot = colorRatios[0] + colorRatios[1] + colorRatios[2] + colorRatios[3]
-        redRatio = (colorRatios[0]/tot)
-        blueRatio = (colorRatios[1]/tot)
-        greenRatio = (colorRatios[2]/tot)
-        yellowRatio = (colorRatios[3]/tot)
-        
+                
         # create tensors for x and y values for each color on cpu
-        self.xTensorsRed = tensor([random.randint(0, width) for x in range(math.floor(redRatio * size))], dtype=int)
-        self.xTensorsBlue = tensor([random.randint(0, width) for x in range(math.floor(blueRatio * size))], dtype=int)
-        self.xTensorsGreen = tensor([random.randint(0, width) for x in range(math.floor(greenRatio * size))], dtype=int)
-        self.xTensorsYellow = tensor([random.randint(0, width) for x in range(math.floor(yellowRatio * size))], dtype=int)
-        self.yTensorsRed = tensor([random.randint(0, height) for x in range(math.floor(redRatio * size))], dtype=int)
-        self.yTensorsBlue = tensor([random.randint(0, height) for x in range(math.floor(blueRatio * size))], dtype=int)
-        self.yTensorsGreen = tensor([random.randint(0, height) for x in range(math.floor(greenRatio * size))], dtype=int)
-        self.yTensorsYellow = tensor([random.randint(0, height) for x in range(math.floor(yellowRatio * size))], dtype=int)
+        self.xTensorsRed = tensor([random.randint(0, width) for x in range(math.floor(size/4))], dtype=int)
+        self.xTensorsBlue = tensor([random.randint(0, width) for x in range(math.floor(size/4))], dtype=int)
+        self.xTensorsGreen = tensor([random.randint(0, width) for x in range(math.floor(size/4))], dtype=int)
+        self.xTensorsYellow = tensor([random.randint(0, width) for x in range(math.floor(size/4))], dtype=int)
+        self.yTensorsRed = tensor([random.randint(0, height) for x in range(math.floor(size/4))], dtype=int)
+        self.yTensorsBlue = tensor([random.randint(0, height) for x in range(math.floor(size/4))], dtype=int)
+        self.yTensorsGreen = tensor([random.randint(0, height) for x in range(math.floor(size/4))], dtype=int)
+        self.yTensorsYellow = tensor([random.randint(0, height) for x in range(math.floor(size/4))], dtype=int)
                 
-        # make sure total particle num equals the total particles
-        for num in range(tot - (math.floor(redRatio * size) + math.floor(blueRatio * size) + math.floor(greenRatio * size) + math.floor(yellowRatio * size))):
-            if num == 0:
-                self.xTensorsRed = torch.cat((self.xTensorsRed, tensor([random.randint(0, width)], dtype=int)))
-                self.yTensorsRed = torch.cat((self.yTensorsRed, tensor([random.randint(0, height)], dtype=int)))
-            elif num == 1:
-                self.xTensorsBlue = torch.cat((self.xTensorsBlue, tensor([random.randint(0, width)], dtype=int)))
-                self.yTensorsBlue = torch.cat((self.yTensorsBlue, tensor([random.randint(0, height)], dtype=int)))
-            else:
-                self.xTensorsGreen = torch.cat((self.xTensorsGreen, tensor([random.randint(0, width)], dtype=int)))
-                self.yTensorsGreen = torch.cat((self.yTensorsGreen, tensor([random.randint(0, height)], dtype=int)))
-                
+        # create gpu tensors for calculations
         self.xGpuTensorsRed = self.xTensorsRed.to(device)
         self.xGpuTensorsBlue = self.xTensorsBlue.to(device)
         self.xGpuTensorsGreen = self.xTensorsGreen.to(device)
@@ -50,6 +33,12 @@ class ParticleLife():
         self.yGpuTensorsBlue = self.yTensorsBlue.to(device)
         self.yGpuTensorsGreen = self.yTensorsGreen.to(device)
         self.yGpuTensorsYellow = self.yTensorsYellow.to(device)
+        
+        # create tensors to store health of each particle
+        self.healthRed = torch.ones([self.xGpuTensorsRed.size(dim=0)], dtype=int, device=device)
+        self.healthBlue = torch.ones([self.xGpuTensorsBlue.size(dim=0)], dtype=int, device=device)
+        self.healthGreen = torch.ones([self.xGpuTensorsGreen.size(dim=0)], dtype=int, device=device)
+        self.healthYellow = torch.ones([self.xGpuTensorsYellow.size(dim=0)], dtype=int, device=device)
         
         # create vx and vy tensors for each color on device
         self.vxTensorsRed = torch.zeros([self.xTensorsRed.size(dim=0),], dtype=float16, device=device)
@@ -219,3 +208,29 @@ class ParticleLife():
         self.VelocityToPos(self.xGpuTensorsBlue, self.yGpuTensorsBlue, self.vxTensorsBlue, self.vyTensorsBlue)
         self.VelocityToPos(self.xGpuTensorsGreen, self.yGpuTensorsGreen, self.vxTensorsGreen, self.vyTensorsGreen)
         self.VelocityToPos(self.xGpuTensorsYellow, self.yGpuTensorsYellow, self.vxTensorsYellow, self.vyTensorsYellow)
+        
+    def regenerateParticles(self, amount: int):
+        for x in range(amount):
+            color = random.choice([red, blue, green, yellow])
+            if color == red:
+                self.xTensorsRed = torch.cat((self.xTensorsRed, tensor([random.randint(0, width)], dtype=int)))
+                self.yTensorsRed = torch.cat((self.yTensorsRed, tensor([random.randint(0, height)], dtype=int)))
+            elif color == blue:
+                self.xTensorsBlue = torch.cat((self.xTensorsBlue, tensor([random.randint(0, width)], dtype=int)))
+                self.yTensorsBlue = torch.cat((self.yTensorsBlue, tensor([random.randint(0, height)], dtype=int)))
+            elif color == green:
+                self.xTensorsBlue = torch.cat((self.xTensorsGreen, tensor([random.randint(0, width)], dtype=int)))
+                self.yTensorsBlue = torch.cat((self.xTensorsGreen, tensor([random.randint(0, height)], dtype=int)))
+            else:
+                self.xTensorsGreen = torch.cat((self.xTensorsYellow, tensor([random.randint(0, width)], dtype=int)))
+                self.yTensorsGreen = torch.cat((self.yTensorsYellow, tensor([random.randint(0, height)], dtype=int)))
+        
+        self.xGpuTensorsRed = self.xTensorsRed.to(device)
+        self.xGpuTensorsBlue = self.xTensorsBlue.to(device)
+        self.xGpuTensorsGreen = self.xTensorsGreen.to(device)
+        self.xGpuTensorsYellow = self.xTensorsYellow.to(device)
+        self.yGpuTensorsRed = self.yTensorsRed.to(device)
+        self.yGpuTensorsBlue = self.yTensorsBlue.to(device)
+        self.yGpuTensorsGreen = self.yTensorsGreen.to(device)
+        self.yGpuTensorsYellow = self.yTensorsYellow.to(device)
+            

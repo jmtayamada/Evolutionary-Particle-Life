@@ -33,7 +33,7 @@ def main():
     
     # initialize particles
     for x in range(k_maxCreatures - len(lifeFormList)):
-        lifeFormList.append(ParticleLife(64, [1, 1, 1, 1], totalParticles/2))
+        lifeFormList.append(ParticleLife(64, totalParticles/2))
         
     # main loop
     while running:
